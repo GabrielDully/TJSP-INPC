@@ -85,10 +85,10 @@ x = atualizacao_monetaria().consultar('11/12/1964')
 print(x)
 
 # Exemplo de uso do módulo.
-y = atualizacao_monetaria()
+indices = atualizacao_monetaria()
 
-indice1 = y.consultar('03/02/2024')
-print(indice1)
+i_1 = indices.consultar('03/02/2024')
+print(i_1)
 
-indice2 = y.consultar('09/03/1998')
-print(indice2)
+i_2 = indices.consultar('09/03/1998')
+print(i_2)
