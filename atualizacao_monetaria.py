@@ -5,6 +5,7 @@ from pathlib import Path
 import colorama
 from colorama import Fore
 colorama.init(autoreset=True)
+from datetime import datetime
 
 class DownloadError(Exception):
     pass
@@ -18,6 +19,7 @@ class atualizacao_monetaria(object):
     def __init__(self):
         self.df = atualizacao_monetaria.carregar_df() 
 
+
     def consultar(self, data: str):
         try:
             # Espera-se o padrão DD/MM/YYYY.
@@ -26,12 +28,29 @@ class atualizacao_monetaria(object):
             indice = indice.replace('.', '')
             indice = indice.replace(',', '.')
             return float(indice)
-        
+
+        except AttributeError:
+
+            if (datetime.now().month == int(componentes[1])) and (datetime.now().year == int(componentes[2])):
+                self.atualizar_df()
+                if type(self.df[componentes[2]][int(componentes[1]) - 1]) != float:
+                    self.consultar(data)
+                else:
+                    raise AttributeError(f"O mês vigente '{componentes[1]}/{componentes[2]}' ainda não possui índice associado.")
+            else:
+                raise AttributeError(f"A data referida '{data}' não possui índice associado.")
+
         except IndexError:
             raise IndexError(f"{Fore.RED}Formato de data não correspondente.{Fore.RESET}\nFormato fornecido: '{data}'\nFormato esperado: 'DD/MM/YYYY'")
         
         except KeyError:
             raise KeyError(f"{Fore.RED}Ano ou mês inválidos.")
+
+
+    def atualizar_df(self):
+        atualizacao_monetaria.download_pdf()
+        atualizacao_monetaria.gerar_df()
+        self.df = atualizacao_monetaria.carregar_df()
 
 
     @classmethod
@@ -81,7 +100,7 @@ class atualizacao_monetaria(object):
 
 
 # Exemplos de uso do módulo.
-x = atualizacao_monetaria().consultar('11/12/1964')
+x = atualizacao_monetaria().consultar('11/03/2024')
 print(x)
 
 # Exemplo de uso do módulo.
