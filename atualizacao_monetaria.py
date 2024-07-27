@@ -5,7 +5,6 @@ from pathlib import Path
 import colorama
 from colorama import Fore
 colorama.init(autoreset=True)
-from datetime import datetime
 
 class DownloadError(Exception):
     pass
@@ -13,38 +12,31 @@ class DownloadError(Exception):
 class atualizacao_monetaria(object):
 
     url = "https://www.tjsp.jus.br/Download/Tabelas/TabelaDebitosJudiciais.pdf"
+    
     pkl_path = 'indices_INPC.pkl'
     pdf_path = 'TabelaDebitosJudiciais.pdf'
+    
+    csv_path = 'datas.csv'
 
     def __init__(self):
-        self.df = atualizacao_monetaria.carregar_df() 
+        self.df = atualizacao_monetaria.carregar_df()
+        self.df_datas = pd.read_csv(atualizacao_monetaria.csv_path)
 
 
-    def consultar(self, data: str):
-        try:
-            # Espera-se o padrão DD/MM/YYYY.
-            componentes = data.split('/')
-            indice = self.df[componentes[2]][int(componentes[1]) - 1]
-            indice = indice.replace('.', '')
-            indice = indice.replace(',', '.')
-            return float(indice)
+    def consultar(self, data: str): # Espera-se o padrão DD/MM/YYYY.
 
-        except AttributeError:
+        componentes = data.split('/')[::-1]
+        mes_ano = componentes[1].zfill(2) + '/' + componentes[0]
+        dia_atualizacao = int(self.df_datas.loc[self.df_datas['mes'] == mes_ano, 'dia'].values[0])
 
-            if (datetime.now().month == int(componentes[1])) and (datetime.now().year == int(componentes[2])):
-                self.atualizar_df()
-                if type(self.df[componentes[2]][int(componentes[1]) - 1]) != float:
-                    self.consultar(data)
-                else:
-                    raise AttributeError(f"O mês vigente '{componentes[1]}/{componentes[2]}' ainda não possui índice associado.")
-            else:
-                raise AttributeError(f"A data referida '{data}' não possui índice associado.")
+        if int(componentes[2]) < dia_atualizacao:
+            id_linha = self.df_datas.loc[self.df_datas['mes'] == mes_ano].index[0]
+            mes_ano = self.df_datas.at[id_linha - 1, 'mes']
+            componentes = mes_ano.split('/')[::-1]
 
-        except IndexError:
-            raise IndexError(f"{Fore.RED}Formato de data não correspondente.{Fore.RESET}\nFormato fornecido: '{data}'\nFormato esperado: 'DD/MM/YYYY'")
-        
-        except KeyError:
-            raise KeyError(f"{Fore.RED}Ano ou mês inválidos.")
+        indice = self.df[componentes[0]][int(componentes[1]) - 1]
+
+        return atualizacao_monetaria.formatar(indice)
 
 
     def atualizar_df(self):
@@ -97,17 +89,24 @@ class atualizacao_monetaria(object):
 
         except FileNotFoundError:
             cls.download_pdf()
+            
 
+    @staticmethod
+    def formatar(indice: str):
+        indice = indice.replace('.', '')
+        indice = indice.replace(',', '.')
+        return float(indice)
 
-# Exemplos de uso do módulo.
-x = atualizacao_monetaria().consultar('11/03/2024')
-print(x)
 
 # Exemplo de uso do módulo.
+
 indices = atualizacao_monetaria()
 
-i_1 = indices.consultar('03/02/2024')
+i_1 = indices.consultar('03/03/2024')
 print(i_1)
 
 i_2 = indices.consultar('09/03/1998')
 print(i_2)
+
+i_3 = indices.consultar('09/02/2024')
+print(i_3)
